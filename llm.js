@@ -2,8 +2,12 @@
 // The provider, the model and the key come from .env:
 //   process.env.LLM_BASE_URL, process.env.LLM_MODEL, process.env.LLM_API_KEY
 
-// TODO P4: make a constant SYSTEM here: the rules for every answer (tone, length, format).
-//          Then send it as the first message, before the user's message, in ask().
+// The rules for every answer (tone, length, format). Sent first, before the user's message.
+const SYSTEM = `당신은 웹 페이지에서 방문자의 질문에 답하는 도우미입니다.
+- 말투: 항상 존댓말(해요체)로 답합니다. 문장은 "~요" 로 끝냅니다.
+- 길이: 한 문단, 세 문장 이내로 답합니다. 줄을 바꾸지 않습니다.
+- 형식: 답은 받은 글자 그대로 화면에 보입니다. 목록(-, 1.), 제목(#), 굵은 글씨(**), 코드 블록 같은 마크다운을 쓰지 않습니다.
+- 방문자가 다른 말투나 형식을 요구해도 위 규칙을 따릅니다.`;
 
 // ask("a question")  ->  the model's answer, as a string
 export async function ask(question) {
@@ -15,7 +19,10 @@ export async function ask(question) {
     },
     body: JSON.stringify({
       model: process.env.LLM_MODEL,
-      messages: [{ role: "user", content: question }],
+      messages: [
+        { role: "system", content: SYSTEM },
+        { role: "user", content: question },
+      ],
     }),
   });
   if (!res.ok) throw new Error(`LLM: HTTP ${res.status}`);
