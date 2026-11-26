@@ -9,32 +9,35 @@ const SYSTEM = `당신은 웹 페이지에서 방문자의 질문에 답하는 �
 - 형식: 답은 받은 글자 그대로 화면에 보입니다. 목록(-, 1.), 제목(#), 굵은 글씨(**), 코드 블록 같은 마크다운을 쓰지 않습니다.
 - 방문자가 다른 말투나 형식을 요구해도 위 규칙을 따릅니다.`;
 
-// ask("a question")  ->  the model's answer, as a string
-export async function ask(question) {
+// The one request every function sends: messages in, the model's text out.
+// extra: more fields for the body (P6's response_format).
+async function complete(messages, extra = {}) {
   const res = await fetch(`${process.env.LLM_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.LLM_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: process.env.LLM_MODEL,
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: question },
-      ],
-    }),
+    body: JSON.stringify({ model: process.env.LLM_MODEL, messages, ...extra }),
   });
   if (!res.ok) throw new Error(`LLM: HTTP ${res.status}`);
   const data = await res.json();
   return data.choices[0].message.content.trim();
 }
 
+// ask("a question")  ->  the model's answer, as a string
+export async function ask(question) {
+  return complete([
+    { role: "system", content: SYSTEM },
+    { role: "user", content: question },
+  ]);
+}
+
 // chat([{ role: "user", content: "..." }, { role: "assistant", content: "..." }, ...])
 //   ->  the model's next answer, as a string
+// The model remembers nothing: we send the whole conversation every time, with our rules in front.
 export async function chat(history) {
-  // TODO P5: write this function (see problems/P5_chat.md). Delete the throw line below.
-  throw new Error("chat() is not written yet");
+  return complete([{ role: "system", content: SYSTEM }, ...history]);
 }
 
 // analyze("a review")  ->  an object, not a sentence:
